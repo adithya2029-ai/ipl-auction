@@ -1,3 +1,4 @@
+import { formatMoney } from '../../shared/rules'
 import type { Member, Notice, Player, RoomState, Team, TeamCode } from '../../shared/types'
 import { TEAM_CODES } from '../../shared/types'
 import { overseasCount, reserveFor } from '../../shared/rules'
@@ -105,8 +106,8 @@ export function acquireBlocker(s: RoomState, team: Team, playerId: string, amoun
   if (amount > team.purse - reserve) {
     const max = Math.max(0, team.purse - reserve)
     return reserve > 0
-      ? `${team.code} can bid at most ${max}L (keeping ${reserve}L to complete the minimum squad)`
-      : `${team.code} has only ${team.purse}L remaining`
+      ? `${team.code} can bid at most ${formatMoney(max)} (keeping ${formatMoney(reserve)} to complete the minimum squad)`
+      : `${team.code} has only ${formatMoney(team.purse)} remaining`
   }
   return null
 }

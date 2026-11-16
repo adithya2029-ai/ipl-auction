@@ -1,3 +1,4 @@
+import { formatMoney } from '../../shared/rules'
 import type { RoomState, TeamCode, Trade, TradeSide } from '../../shared/types'
 import { committedFor, overseasCount } from '../../shared/rules'
 import { type Api, actor, controls, emit, ensure, fail, isTeamCode, notify, ownersOf, removeFromLineup, requireHost } from './util'
@@ -105,7 +106,7 @@ function execute(a: Api, t: Trade) {
 
 export function describe(s: RoomState, t: Pick<Trade, 'from' | 'to' | 'give' | 'receive'>): string {
   const part = (x: TradeSide) =>
-    [...x.players.map((id) => s.library[id]?.name ?? id), ...(x.cash ? [`${x.cash}L`] : [])].join(' + ') || 'nothing'
+    [...x.players.map((id) => s.library[id]?.name ?? id), ...(x.cash ? [`${formatMoney(x.cash)}`] : [])].join(' + ') || 'nothing'
   return `${t.from} sends ${part(t.give)} to ${t.to} for ${part(t.receive)}`
 }
 

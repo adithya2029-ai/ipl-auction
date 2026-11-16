@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:e2e": "node --import tsx tests/scenarios.ts",
-    "data:build": "node --import tsx scripts/build-players.ts"
+    "data:build": "node --import tsx scripts/build-players.ts",
+    "test:ui": "node tests/ui-smoke.mjs"
   },
   "engines": {
     "node": ">=22.13"

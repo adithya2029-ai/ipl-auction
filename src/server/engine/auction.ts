@@ -1,3 +1,4 @@
+import { formatMoney } from '../../shared/rules'
 import type { AcquiredVia, Lot, RoomState, TeamCode } from '../../shared/types'
 import { TEAM_CODES } from '../../shared/types'
 import { emptyTeams, minNextBid, overseasCount, setIndex } from '../../shared/rules'
@@ -203,8 +204,8 @@ export function placeBid(a: Api, p: { team?: unknown; amount?: unknown; lotKey?:
   const amount = intIn(p.amount, 1, 1_000_000, 'Bid')
   const lot = s.lots[c.playerId]
   const min = minNextBid(c.high?.amount ?? null, lot.basePrice, s.config.increments)
-  if (amount < min) fail(c.high ? `Outbid: the minimum bid is now ${min}L` : `The base price is ${min}L`)
-  if (!s.config.allowJumpBids && amount !== min) fail(`Jump bids are disabled; the next bid is ${min}L`)
+  if (amount < min) fail(c.high ? `Outbid: the minimum bid is now ${formatMoney(min)}` : `The base price is ${formatMoney(min)}`)
+  if (!s.config.allowJumpBids && amount !== min) fail(`Jump bids are disabled; the next bid is ${formatMoney(min)}`)
   const blocker = acquireBlocker(s, s.teams[team], c.playerId, amount)
   if (blocker) fail(blocker)
   const bid = { team, amount, memberId: m.id, at: ctx.now }
@@ -272,7 +273,7 @@ function sell(a: Api, team: TeamCode, amount: number, via: 'auction' | 'rtm') {
     data: { playerId: lot.playerId, team, amount, via, round: s.round, lotKey },
   })
   emit(a, 'sold', { playerId: lot.playerId, team, amount, via, round: s.round })
-  notify(a, 'success', `${player(s, lot.playerId).name} SOLD to ${team} for ${amount}L${via === 'rtm' ? ' (RTM)' : ''}`)
+  notify(a, 'success', `${player(s, lot.playerId).name} SOLD to ${team} for ${formatMoney(amount)}${via === 'rtm' ? ' (RTM)' : ''}`)
 }
 
 function markUnsold(a: Api, reason: string) {
@@ -313,7 +314,7 @@ export function resolveCurrent(a: Api) {
       c.deadline = s.paused ? null : ctx.now + sec(s.config.rtmDecisionSeconds)
       c.pausedRemaining = s.paused ? sec(s.config.rtmDecisionSeconds) : null
       emit(a, 'rtm_offered', { playerId: c.playerId, team: rtm, price: c.high.amount })
-      notify(a, 'info', `${rtm} may use a Right to Match card on ${player(s, c.playerId).name} at ${c.high.amount}L`)
+      notify(a, 'info', `${rtm} may use a Right to Match card on ${player(s, c.playerId).name} at ${formatMoney(c.high.amount)}`)
       return
     }
     return sell(a, c.high.team, c.high.amount, 'auction')
@@ -383,12 +384,12 @@ export function rtmAction(a: Api, p: { action?: unknown; amount?: unknown; lotKe
       rtm.raisedTo = amount
       emit(a, 'rtm_raised', { playerId: c.playerId, team: winner, amount })
       if (acquireBlocker(s, s.teams[rtm.team], c.playerId, amount)) {
-        notify(a, 'info', `${rtm.team} cannot afford to match ${amount}L`)
+        notify(a, 'info', `${rtm.team} cannot afford to match ${formatMoney(amount)}`)
         return sell(a, winner, amount, 'auction')
       }
       c.phase = 'rtm_match'
       c.deadline = ctx.now + sec(s.config.rtmDecisionSeconds)
-      notify(a, 'info', `${winner} raised to ${amount}L. ${rtm.team} must match or decline.`)
+      notify(a, 'info', `${winner} raised to ${formatMoney(amount)}. ${rtm.team} must match or decline.`)
       return
     }
     case 'no_raise': {
@@ -630,7 +631,7 @@ export function correctSale(a: Api, p: { playerId?: unknown; team?: unknown; amo
     data: { playerId: p.playerId, fromTeam: oldTeam, fromAmount: entry.price, team: p.team, amount, prevTx: prev?.id ?? null },
   })
   emit(a, 'sale_corrected', { playerId: p.playerId, fromTeam: oldTeam, fromAmount: entry.price, team: p.team, amount })
-  notify(a, 'host', `Sale corrected: ${player(s, p.playerId).name} → ${p.team} for ${amount}L`)
+  notify(a, 'host', `Sale corrected: ${player(s, p.playerId).name} → ${p.team} for ${formatMoney(amount)}`)
 }
 
 export function manualAssign(a: Api, p: { playerId?: unknown; team?: unknown; amount?: unknown }) {
@@ -657,7 +658,7 @@ export function manualAssign(a: Api, p: { playerId?: unknown; team?: unknown; am
   lot.attempts.push({ round: s.round, startedAt: ctx.now, endedAt: ctx.now, result: 'sold', amount, team: p.team, bidCount: 0, via: 'manual' })
   s.ledger.push({ id: ctx.id(), type: 'manual_assign', at: ctx.now, by: ctx.actorId, undone: false, data: { playerId: p.playerId, team: p.team, amount } })
   emit(a, 'manual_assign', { playerId: p.playerId, team: p.team, amount })
-  notify(a, 'host', `${player(s, p.playerId).name} assigned to ${p.team} for ${amount}L`)
+  notify(a, 'host', `${player(s, p.playerId).name} assigned to ${p.team} for ${formatMoney(amount)}`)
 }
 
 export function adjustPurse(a: Api, p: { team?: unknown; delta?: unknown; reason?: unknown }) {
